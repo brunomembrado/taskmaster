@@ -20,7 +20,7 @@ ENV MIX_ENV="prod"
 
 # Install dependencies first (layer caching)
 COPY mix.exs mix.lock ./
-RUN mix deps.get --only $MIX_ENV
+RUN mix deps.get
 RUN mkdir config
 
 # Copy compile-time config before compiling deps
