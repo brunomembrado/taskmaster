@@ -17,10 +17,11 @@ RUN mix local.hex --force && \
     mix local.rebar --force
 
 ENV MIX_ENV="prod"
+ENV HEX_HTTP_TIMEOUT=120
 
 # Install dependencies first (layer caching)
 COPY mix.exs mix.lock ./
-RUN mix deps.get
+RUN mix deps.get --check-locked
 RUN mkdir config
 
 # Copy compile-time config before compiling deps
