@@ -1,7 +1,20 @@
 defmodule TaskmasterWeb.AuthController do
   use TaskmasterWeb, :controller
+  use OpenApiSpex.ControllerSpecs
 
   alias Taskmaster.Accounts
+  alias TaskmasterWeb.Schemas
+
+  tags(["Auth"])
+
+  operation(:register,
+    summary: "Register a new user",
+    request_body: {"Registration params", "application/json", Schemas.RegisterRequest},
+    responses: [
+      created: {"User created", "application/json", Schemas.AuthResponse},
+      unprocessable_entity: {"Validation errors", "application/json", Schemas.ValidationErrorResponse}
+    ]
+  )
 
   def register(conn, params) do
     case Accounts.create_user(params) do
@@ -23,6 +36,16 @@ defmodule TaskmasterWeb.AuthController do
         |> json(%{errors: format_changeset_errors(changeset)})
     end
   end
+
+  operation(:login,
+    summary: "Log in with email and password",
+    request_body: {"Login credentials", "application/json", Schemas.LoginRequest},
+    responses: [
+      ok: {"Login successful", "application/json", Schemas.AuthResponse},
+      unauthorized: {"Invalid credentials", "application/json", Schemas.ErrorResponse},
+      unprocessable_entity: {"Missing params", "application/json", Schemas.ErrorResponse}
+    ]
+  )
 
   def login(conn, %{"email" => email, "password" => password}) do
     case Accounts.authenticate(email, password) do
@@ -50,6 +73,15 @@ defmodule TaskmasterWeb.AuthController do
     |> put_status(:unprocessable_entity)
     |> json(%{errors: ["email and password are required"]})
   end
+
+  operation(:me,
+    summary: "Get current user profile",
+    security: [%{"bearerAuth" => []}],
+    responses: [
+      ok: {"Current user", "application/json", Schemas.UserResponse},
+      unauthorized: {"Missing or invalid token", "application/json", Schemas.ErrorResponse}
+    ]
+  )
 
   def me(conn, _params) do
     user = conn.assigns.current_user

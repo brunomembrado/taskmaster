@@ -3,6 +3,12 @@ defmodule TaskmasterWeb.Router do
 
   pipeline :api do
     plug(:accepts, ["json"])
+    plug(OpenApiSpex.Plug.PutApiSpec, module: TaskmasterWeb.ApiSpec)
+  end
+
+  pipeline :browser do
+    plug(:accepts, ["html"])
+    plug(OpenApiSpex.Plug.PutApiSpec, module: TaskmasterWeb.ApiSpec)
   end
 
   # NEW: pipeline that requires authentication
@@ -10,8 +16,21 @@ defmodule TaskmasterWeb.Router do
     plug(TaskmasterWeb.Plugs.Auth)
   end
 
+  # Swagger UI + OpenAPI spec — no namespace prefix
+  scope "/api" do
+    pipe_through(:browser)
+    get("/swaggerui", OpenApiSpex.Plug.SwaggerUI, path: "/api/openapi")
+  end
+
+  scope "/api" do
+    pipe_through(:api)
+    get("/openapi", OpenApiSpex.Plug.RenderSpec, [])
+  end
+
   scope "/api", TaskmasterWeb do
     pipe_through(:api)
+
+    get("/health", HealthController, :index)
 
     scope "/auth" do
       post("/register", AuthController, :register)

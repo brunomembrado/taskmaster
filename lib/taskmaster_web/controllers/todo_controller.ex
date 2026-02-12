@@ -1,6 +1,38 @@
 defmodule TaskmasterWeb.TodoController do
   use TaskmasterWeb, :controller
+  use OpenApiSpex.ControllerSpecs
+
   alias Taskmaster.Todos
+  alias TaskmasterWeb.Schemas
+
+  tags(["Todos"])
+
+  operation(:index,
+    summary: "List all todos for the current user",
+    security: [%{"bearerAuth" => []}],
+    responses: [
+      ok: {"Todo list", "application/json", Schemas.TodoListResponse},
+      unauthorized: {"Missing or invalid token", "application/json", Schemas.ErrorResponse}
+    ]
+  )
+
+  def index(conn, _params) do
+    user = conn.assigns.current_user
+    todos = Todos.list_todos(user.id)
+
+    conn |> put_status(:ok) |> json(%{data: %{todos: Enum.map(todos, &format_todo/1)}})
+  end
+
+  operation(:create,
+    summary: "Create a new todo",
+    security: [%{"bearerAuth" => []}],
+    request_body: {"Todo params", "application/json", Schemas.CreateTodoRequest},
+    responses: [
+      created: {"Todo created", "application/json", Schemas.TodoResponse},
+      unprocessable_entity: {"Validation errors", "application/json", Schemas.ValidationErrorResponse},
+      unauthorized: {"Missing or invalid token", "application/json", Schemas.ErrorResponse}
+    ]
+  )
 
   def create(conn, params) do
     current_user = conn.assigns.current_user
@@ -22,6 +54,19 @@ defmodule TaskmasterWeb.TodoController do
     end
   end
 
+  operation(:show,
+    summary: "Get a specific todo by ID",
+    security: [%{"bearerAuth" => []}],
+    parameters: [
+      id: [in: :path, type: :string, description: "Todo UUID", required: true]
+    ],
+    responses: [
+      ok: {"Todo details", "application/json", Schemas.TodoResponse},
+      not_found: {"Todo not found", "application/json", Schemas.ErrorResponse},
+      unauthorized: {"Missing or invalid token", "application/json", Schemas.ErrorResponse}
+    ]
+  )
+
   def show(conn, %{"id" => id}) do
     current_user = conn.assigns.current_user
 
@@ -40,19 +85,26 @@ defmodule TaskmasterWeb.TodoController do
     end
   end
 
-  def index(conn, _params) do
-    user = conn.assigns.current_user
-    todos = Todos.list_todos(user.id)
-
-    conn |> put_status(:ok) |> json(%{data: %{todos: Enum.map(todos, &format_todo/1)}})
-  end
+  operation(:update,
+    summary: "Update a todo",
+    security: [%{"bearerAuth" => []}],
+    parameters: [
+      id: [in: :path, type: :string, description: "Todo UUID", required: true]
+    ],
+    request_body: {"Update params", "application/json", Schemas.UpdateTodoRequest},
+    responses: [
+      ok: {"Todo updated", "application/json", Schemas.TodoResponse},
+      not_found: {"Todo not found", "application/json", Schemas.ErrorResponse},
+      unprocessable_entity: {"Validation errors", "application/json", Schemas.ValidationErrorResponse},
+      unauthorized: {"Missing or invalid token", "application/json", Schemas.ErrorResponse}
+    ]
+  )
 
   def update(conn, %{"id" => id} = params) do
     user = conn.assigns.current_user
 
     with {:ok, todo} <- Todos.get_todo(id, user.id),
          {:ok, updated} <- Todos.update_todo(todo, params) do
-      # both succeeded
       conn |> put_status(:ok) |> json(%{data: %{todo: format_todo(updated)}})
     else
       {:error, :not_found} ->
@@ -66,6 +118,19 @@ defmodule TaskmasterWeb.TodoController do
         |> json(%{errors: format_changeset_errors(changeset)})
     end
   end
+
+  operation(:delete,
+    summary: "Delete a todo",
+    security: [%{"bearerAuth" => []}],
+    parameters: [
+      id: [in: :path, type: :string, description: "Todo UUID", required: true]
+    ],
+    responses: [
+      ok: {"Todo deleted", "application/json", Schemas.ErrorResponse},
+      not_found: {"Todo not found", "application/json", Schemas.ErrorResponse},
+      unauthorized: {"Missing or invalid token", "application/json", Schemas.ErrorResponse}
+    ]
+  )
 
   def delete(conn, %{"id" => id}) do
     user = conn.assigns.current_user
