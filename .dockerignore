@@ -1,0 +1,29 @@
+# Build artifacts
+/_build/
+/deps/
+
+# Version control
+.git/
+.gitignore
+
+# Test and documentation
+/test/
+/cover/
+/doc/
+
+# Editor/IDE
+.elixir_ls/
+.vscode/
+
+# Temporary files
+/tmp/
+erl_crash.dump
+*.ez
+taskmaster-*.tar
+
+# Docker
+Dockerfile
+.dockerignore
+
+# CI
+.github/

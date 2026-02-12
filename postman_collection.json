@@ -1,0 +1,246 @@
+{
+  "info": {
+    "name": "Taskmaster Elixir API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:4000/api" },
+    { "key": "token", "value": "" },
+    { "key": "todo_id", "value": "" },
+    { "key": "user_email", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/register",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"todouser\",\n  \"email\": \"todo@test.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const rand = Math.floor(Math.random() * 100000);",
+                  "const email = `user${rand}@test.com`;",
+                  "pm.collectionVariables.set('user_email', email);",
+                  "pm.request.body.raw = JSON.stringify({",
+                  "  username: `user${rand}`,",
+                  "  email: email,",
+                  "  password: 'password123'",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  console.log('Registered:', pm.collectionVariables.get('user_email'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/login",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  console.log('Token saved from login');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/auth/me",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Todos - Happy Path",
+      "item": [
+        {
+          "name": "1. Create Todo",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/todos",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Learn Elixir\",\n  \"description\": \"Build a todo API with Phoenix\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('todo_id', json.data.todo.id);",
+                  "  console.log('Todo ID saved:', json.data.todo.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Create Second Todo",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/todos",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Buy milk\"\n}"
+            }
+          }
+        },
+        {
+          "name": "3. List All Todos",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/todos",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          }
+        },
+        {
+          "name": "4. Get Single Todo",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/todos/{{todo_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          }
+        },
+        {
+          "name": "5. Update Todo (mark completed)",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/todos/{{todo_id}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completed\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "6. Update Todo (change title)",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/todos/{{todo_id}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Learn Elixir (updated)\",\n  \"description\": \"Almost done!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "7. Delete Todo",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/todos/{{todo_id}}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Todos - Error Cases",
+      "item": [
+        {
+          "name": "Create without title (422)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/todos",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"no title here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get non-existent todo (404)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/todos/00000000-0000-0000-0000-000000000000",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ]
+          }
+        },
+        {
+          "name": "No auth token (401)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/todos"
+          }
+        }
+      ]
+    }
+  ]
+}
