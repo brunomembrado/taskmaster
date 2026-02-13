@@ -33,7 +33,23 @@ defmodule Taskmaster.Todos.Todo do
   def update_todo_changeset(todo, attrs) do
     todo
     |> cast(attrs, [:title, :description, :completed])
+    |> validate_not_blank(:title)
     |> validate_length(:title, min: 1, max: 40)
     |> validate_length(:description, max: 100)
+  end
+
+  # Rejects "" (which Ecto casts to nil for strings) when the field is in changes
+  defp validate_not_blank(changeset, field) do
+    case get_change(changeset, field) do
+      nil ->
+        if Map.has_key?(changeset.params, to_string(field)) do
+          add_error(changeset, field, "can't be blank")
+        else
+          changeset
+        end
+
+      _ ->
+        changeset
+    end
   end
 end

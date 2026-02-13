@@ -10,17 +10,27 @@ defmodule TaskmasterWeb.TodoController do
   operation(:index,
     summary: "List all todos for the current user",
     security: [%{"bearerAuth" => []}],
+    parameters: [
+      completed: [in: :query, type: :string, description: "Filter by completed: true or false"],
+      search: [in: :query, type: :string, description: "Search title/description (case-insensitive)"],
+      sort_by: [in: :query, type: :string, description: "Sort field: title, completed, inserted_at"],
+      order: [in: :query, type: :string, description: "Sort order: asc or desc"],
+      page: [in: :query, type: :integer, description: "Page number (default: 1)"],
+      page_size: [in: :query, type: :integer, description: "Items per page (default: 20, max: 100)"]
+    ],
     responses: [
       ok: {"Todo list", "application/json", Schemas.TodoListResponse},
       unauthorized: {"Missing or invalid token", "application/json", Schemas.ErrorResponse}
     ]
   )
 
-  def index(conn, _params) do
+  def index(conn, params) do
     user = conn.assigns.current_user
-    todos = Todos.list_todos(user.id)
+    %{todos: todos, meta: meta} = Todos.list_todos(user.id, params)
 
-    conn |> put_status(:ok) |> json(%{data: %{todos: Enum.map(todos, &format_todo/1)}})
+    conn
+    |> put_status(:ok)
+    |> json(%{data: %{todos: Enum.map(todos, &format_todo/1)}, meta: meta})
   end
 
   operation(:create,

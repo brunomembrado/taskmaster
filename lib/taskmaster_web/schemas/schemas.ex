@@ -164,6 +164,20 @@ defmodule TaskmasterWeb.Schemas do
     })
   end
 
+  defmodule PaginationMeta do
+    require OpenApiSpex
+    OpenApiSpex.schema(%{
+      title: "PaginationMeta",
+      type: :object,
+      properties: %{
+        page: %Schema{type: :integer, example: 1},
+        page_size: %Schema{type: :integer, example: 20},
+        total: %Schema{type: :integer, example: 45},
+        total_pages: %Schema{type: :integer, example: 3}
+      }
+    })
+  end
+
   defmodule TodoListResponse do
     require OpenApiSpex
     OpenApiSpex.schema(%{
@@ -175,7 +189,8 @@ defmodule TaskmasterWeb.Schemas do
           properties: %{
             todos: %Schema{type: :array, items: Todo}
           }
-        }
+        },
+        meta: PaginationMeta
       }
     })
   end
